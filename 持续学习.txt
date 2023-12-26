@@ -1,0 +1,124 @@
+import torch
+from torch import nn
+from torch.nn import functional as F
+from torch import optim
+import torchvision.datasets as datasets
+from torch.utils.data import Dataset
+import torchvision.transforms as transforms
+from torch import nn, optim
+import numpy as np
+
+
+# Define a simple Multi-Layer Perceptron
+class MLP(nn.Module):
+    def __init__(self):
+        super(MLP, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(28 * 28, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 10)
+        )
+
+    def forward(self, x):
+        x = x.view(x.size(0), -1)
+        x = self.layers(x)
+        return x
+
+
+# Initialize the network, the optimizer and the criterion
+net = MLP()
+optimizer = optim.SGD(net.parameters(), lr=0.01)
+criterion = nn.CrossEntropyLoss()
+
+
+# Load your data for Task 1 and Task 2
+# trainloader1, trainloader2 = ...
+# Prepare the MNIST dataset
+class IndexedMNISTDataset(Dataset):
+    def __init__(self, mnist_dataset):
+        self.mnist_dataset = mnist_dataset
+
+    def __getitem__(self, index):
+        image, label = self.mnist_dataset[index]
+        label = torch.tensor(label, dtype=torch.int8)
+        return image, label, index
+
+    def __len__(self):
+        return len(self.mnist_dataset)
+
+
+# Prepare the MNIST dataset
+transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+mnist_dataset = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+
+# Wrap the MNIST dataset in the custom dataset
+indexed_dataset = IndexedMNISTDataset(mnist_dataset)
+
+entropy_list = []
+for image, label, index in indexed_dataset:
+    net.eval()
+    output = net(image)
+    # Calculate the entropy of the output probabilities
+    probs = F.softmax(output, dim=1)
+    log_probs = F.log_softmax(output, dim=1)
+    entropy = -(probs * log_probs).sum(dim=1).mean()
+    entropy_list.append(entropy)
+entropy_list = np.array(entropy_list)
+sorted_indices_desc = np.argsort(entropy_list)[::-1]
+sorted_indices_desc = sorted_indices_desc[0:64].tolist()
+
+
+# Create a data loader
+train_loader = torch.utils.data.DataLoader(indexed_dataset, batch_size=64, shuffle=True)
+loader = iter(train_loader)
+images, labels, indexes = loader.next()
+index_list = []
+i = 0
+for idx in sorted_indices_desc:
+    images[i, 0, 0:, 0:], labels[i], index = indexed_dataset[idx]
+    i += 1
+    index_list.append(idx)
+net.train()
+optimizer.zero_grad()
+output = net(images)
+print(output.size())
+print(type(output))
+print(labels.size())
+print(type(labels))
+
+
+loss = criterion(output, labels)
+loss.backward()
+print(loss)
+optimizer.step()
+
+for index in sorted_indices_desc:
+    net.train()
+    image, label, index = indexed_dataset[index]
+    print(image.size())
+    index_list.append(index)
+    optimizer.zero_grad()
+    output = net(image)
+    print("***********************")
+
+    # _, predicted = torch.max(output.data, 1)
+    # print(type(image))
+    # print(type(output))
+    # print(type(label))
+    # add a dimension to output and target to mimic the batch size
+    label = label.unsqueeze(0)
+    # label = label.unsqueeze(0)
+    print(output.size())
+    print(type(output))
+    print(labels.size())
+    print(type(labels))
+
+    loss = criterion(output, label)
+    print(loss)
+    exit()
+    loss.backward()
+    optimizer.step()
+
+print(index_list)
