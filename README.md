@@ -2,7 +2,7 @@
 
 Implementation of continuous learning related algorithms and many of my own work.
 
-Including the Zhongke Software Terminal. py, which uses multiple fusion algorithms and embeds an entity extraction model, selecting the most annotated dataset for the entity extraction model of the confidential system and providing their connections.
+Including the 中科软件终.py, which uses multiple fusion algorithms and embeds an entity extraction model, selecting the most annotated dataset for the entity extraction model of the confidential system and providing their connections.
 
 Continuous learning algorithms that integrate multiple strategies typically have better performance than single algorithms because multiple strategies provide diversity in the dataset. In a fixed dataset standard task, the better the diversity of the dataset, the more likely the model is to "consider the big picture" and learn more complete knowledge.
 
